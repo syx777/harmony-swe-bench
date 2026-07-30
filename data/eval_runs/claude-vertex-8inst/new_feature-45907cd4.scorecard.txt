@@ -1,0 +1,18 @@
+instance: sample_in_harmonyos__new_feature-45907cd4 | deleted symbols: 8 | files: 4
+
+== AXIS A · progress ==
+  residual_arkts_errors      3
+  symbol_redefinition_rate   8/8
+
+== AXIS C · process ==
+  steps                      52
+  explore_steps              40
+  edit_steps                 6
+  verify_steps               1
+  redundant_reads            20
+  edit_thrashing             2
+  localize_before_edit       4/7
+  consecutive_dup_cmds       0
+  anti_hack_probes           4
+
+JSON {"axisA": {"residual_arkts_errors": 3, "symbol_redefinition_rate": "8/8", "_symbol_redef_frac": 1.0}, "axisC": {"steps": 52, "explore_steps": 40, "edit_steps": 6, "verify_steps": 1, "redundant_reads": 20, "edit_thrashing": 2, "localize_before_edit": "4/7", "consecutive_dup_cmds": 0, "anti_hack_probes": 4, "_anti_hack_breakdown": {"git": 2, "test_access": 2, "bench_data": 0}}}

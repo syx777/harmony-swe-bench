@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "harmony-swe-bench"
+version = "0.1.0"
+description = "Structural task mining + SWE-like sample construction for HarmonyOS Code Agent evaluation"
+requires-python = ">=3.8"
+dependencies = [
+    "tree-sitter==0.21.3",
+    "tree-sitter-typescript==0.21.2",
+    "json5>=0.9.14",
+    "click>=8.1",
+    "pydantic>=2.6,<3",
+    "pyyaml>=6.0",
+    "anthropic>=0.39",
+    "openai>=1.30",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+harmony-bench = "harmony_bench.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["harmony_bench*"]

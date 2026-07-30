@@ -1,0 +1,15 @@
+# LLM config — uses an Anthropic-compatible gateway.
+# Auth: ANTHROPIC_AUTH_TOKEN (Bearer) + ANTHROPIC_BASE_URL are read from the env;
+# no key or endpoint is stored here.
+provider: anthropic
+model: claude-opus-4-8
+base_url: null   # set ANTHROPIC_BASE_URL in the env, or put your gateway URL here
+temperature: 1.0
+max_tokens: 16000
+thinking_budget: null
+max_retries: 8
+retry_base_delay: 2.0
+retry_max_delay: 60.0
+api_key_env:
+  anthropic: ANTHROPIC_AUTH_TOKEN
+  openai: OPENAI_API_KEY
