@@ -1,5 +1,9 @@
 # harmony-swe-bench
 
+**Windows / WSL2:** see [WSL2 + udocker setup](docs/wsl-udocker.md). The runner
+supports separate source/toolchain checkouts through `HB_REPO_ROOT` and
+`HB_TOOLCHAIN_ROOT`; `python -m harmony_bench.doctor` checks the host setup.
+
 A multi-file `new_feature` benchmark for HarmonyOS Code Agents, plus a process-level
 evaluation of *how* an agent solves each task.
 
@@ -173,7 +177,8 @@ export HB_CONTAINER_ENGINE=docker    # or: udocker (default)
 ```
 
 Both engines expose the same `run -v <mnt>:<mnt> <image> bash <script>` surface, so
-nothing else changes. With `udocker`, also set `export UDOCKER_DIR=/tmp/udocker`.
+nothing else changes. With `udocker`, use a persistent image store:
+`export UDOCKER_DIR="$HOME/.udocker"` (or your existing udocker repository).
 
 ## 2.1 Install
 

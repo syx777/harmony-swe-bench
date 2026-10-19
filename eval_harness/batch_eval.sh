@@ -6,7 +6,7 @@ set -u
 cd "$(dirname "$0")/.."          # harmony-swe-bench/
 export PYTHONPATH=.
 export HB_CONTAINER_ENGINE=${HB_CONTAINER_ENGINE:-udocker}
-[ "$HB_CONTAINER_ENGINE" = udocker ] && export UDOCKER_DIR=${UDOCKER_DIR:-/tmp/udocker}
+[ "$HB_CONTAINER_ENGINE" = udocker ] && export UDOCKER_DIR="${UDOCKER_DIR:-$HOME/.udocker}"
 : "${MSWEA_VENV_PYTHON:?set MSWEA_VENV_PYTHON to a python that has your scaffold installed (example: mini-swe-agent)}"
 : "${ANTHROPIC_AUTH_TOKEN:?set ANTHROPIC_AUTH_TOKEN}"
 STEPS=${STEPS:-75}

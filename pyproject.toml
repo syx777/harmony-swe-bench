@@ -27,3 +27,6 @@ harmony-bench = "harmony_bench.cli:cli"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["harmony_bench*"]
+
+[tool.setuptools.package-data]
+"harmony_bench.runner" = ["*.sh"]

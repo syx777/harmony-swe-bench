@@ -9,9 +9,10 @@ from harmony_bench.graph import build_repo_index, build_symbol_graph
 from harmony_bench.carve import carve
 from harmony_bench.carve.closure import module_of
 from harmony_bench.hollow import hollow_l2
+from harmony_bench.paths import repo_root
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.abspath(os.path.join(_HERE, "..", ".."))
+REPO = repo_root()
 
 
 def _graph():

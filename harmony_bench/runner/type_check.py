@@ -14,13 +14,13 @@ surface, so the oracle is engine-agnostic; docker is recommended where available
 from __future__ import annotations
 import os
 import re
+import shutil
 import subprocess
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
 _SCRIPT = os.path.join(os.path.dirname(__file__), "hvigor_typecheck.sh")
-_DEFAULT_PROXY = os.environ.get("http_proxy") or "http://10.217.142.137:8080"
 
 
 def _engine() -> str:
@@ -76,29 +76,51 @@ def ensure_typecheck(repo_root: str) -> None:
 def type_check(module: str,
                repo_root: str,
                toolchain_root: str,
-               container: str = "hosbench",
+               container: Optional[str] = None,
                mount_root: Optional[str] = None,
-               udocker_dir: str = "/tmp/udocker",
-               proxy: Optional[str] = _DEFAULT_PROXY,
+               udocker_dir: Optional[str] = None,
+               proxy: Optional[str] = None,
                timeout: int = 240) -> TypeCheckResult:
     """Judge the current on-disk state of `module` as GREEN / RED.
 
     Runs `hvigor_typecheck.sh` inside `container` via the configured engine
-    (`HB_CONTAINER_ENGINE`, default `udocker`). `mount_root` must be a common ancestor
-    of both `repo_root` and `toolchain_root` (defaults to repo parent); it is
-    bind-mounted into the container at the same path so absolute paths line up.
+    (`HB_CONTAINER_ENGINE`, default `udocker`). By default the source, toolchain,
+    and runner directories are mounted separately at their original Linux paths.
+    An explicit `mount_root` must contain both source and toolchain; the runner
+    is still mounted separately if necessary. An empty proxy string disables proxying.
     """
-    repo_root = os.path.abspath(repo_root)
-    toolchain_root = os.path.abspath(toolchain_root)
-    if mount_root is None:
-        mount_root = os.path.dirname(repo_root)
-    mount_root = os.path.abspath(mount_root)
-
-    ensure_typecheck(repo_root)
-
+    repo_root = os.path.realpath(os.path.expanduser(repo_root))
+    toolchain_root = os.path.realpath(os.path.expanduser(toolchain_root))
     engine = _engine()
+    if engine not in ("udocker", "docker"):
+        return TypeCheckResult(Verdict.ERROR, f"Unsupported HB_CONTAINER_ENGINE: {engine}", "")
+    if not shutil.which(engine):
+        return TypeCheckResult(Verdict.ERROR, f"{engine} not found in PATH; run inside WSL with your Linux venv activated", "")
+    for path in (repo_root, toolchain_root):
+        if not os.path.isdir(path):
+            return TypeCheckResult(Verdict.ERROR, f"Directory not found: {path}", "")
+    script_dir = os.path.dirname(os.path.realpath(_SCRIPT))
+    if mount_root is not None:
+        mount_root = os.path.realpath(os.path.expanduser(mount_root))
+        if any(os.path.commonpath([mount_root, p]) != mount_root
+               for p in (repo_root, toolchain_root)):
+            return TypeCheckResult(Verdict.ERROR, "mount_root must contain source and toolchain", "")
+        mounts = [mount_root]
+    else:
+        mounts = list(dict.fromkeys([repo_root, toolchain_root]))
+    if not any(os.path.commonpath([p, script_dir]) == p for p in mounts):
+        mounts.append(script_dir)
+    try:
+        ensure_typecheck(repo_root)
+    except (OSError, ValueError) as exc:
+        return TypeCheckResult(Verdict.ERROR, f"Cannot configure ArkTS type checking: {exc}", "")
+
+    container = container or os.environ.get("HB_CONTAINER", "hosbench")
+    if proxy is None:
+        proxy = os.environ.get("HB_PROXY", os.environ.get("http_proxy", os.environ.get("https_proxy", "")))
     env = os.environ.copy()
-    env["UDOCKER_DIR"] = udocker_dir
+    env["UDOCKER_DIR"] = os.path.abspath(os.path.expanduser(
+        udocker_dir or env.get("UDOCKER_DIR") or "~/.udocker"))
     cmd = [
         engine, "run",
         f"--env=HB_TC={toolchain_root}",
@@ -110,7 +132,9 @@ def type_check(module: str,
         cmd.append(f"--env=HB_PROXY={proxy}")
     if engine == "docker":
         cmd.append("--rm")
-    cmd += ["-v", f"{mount_root}:{mount_root}", container, "bash", _SCRIPT]
+    for path in mounts:
+        cmd += ["-v", f"{path}:{path}"]
+    cmd += [container, "bash", os.path.join(script_dir, os.path.basename(_SCRIPT))]
 
     # generous outer timeout: inner script self-limits to HB_TIMEOUT, add slack for
     # container startup + first-run pnpm/hvigor plugin bootstrap.
@@ -119,6 +143,8 @@ def type_check(module: str,
                               timeout=timeout + 300)
     except subprocess.TimeoutExpired as exc:
         return TypeCheckResult(Verdict.ERROR, "outer timeout", (exc.stdout or "") if isinstance(exc.stdout, str) else "")
+    except OSError as exc:
+        return TypeCheckResult(Verdict.ERROR, f"Cannot start {engine}: {exc}", "")
 
     out = proc.stdout or ""
     m = re.search(r"HB_VERDICT=(\d)", out)

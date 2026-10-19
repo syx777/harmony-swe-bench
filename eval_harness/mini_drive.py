@@ -9,15 +9,19 @@ from harmony_bench.carve import carve
 from harmony_bench.hollow import hollow_l2
 from harmony_bench.author import module_root
 from harmony_bench.runner import type_check, Verdict
+from harmony_bench.paths import BENCH_ROOT, repo_root, toolchain_root
 
-REPO = os.path.abspath("..")
-TC = os.path.abspath("../../harmony_toolchain")
+REPO = repo_root()
+TC = toolchain_root(REPO)
 # path to a python that has mini-swe-agent installed (see README); override via env
 VENV = os.environ.get("MSWEA_VENV_PYTHON", "python3")
 RUNNER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mini_runner.py")
 INST = json.load(open(sys.argv[1]))
 STEPS = int(sys.argv[2]) if len(sys.argv) > 2 else 40
 ANCHOR = INST["harmony"]["anchor"]
+
+if not os.path.isfile(os.path.join(REPO, "hvigor", "hvigor-config.json5")):
+    raise SystemExit("Set HB_REPO_ROOT to the Linux path of a disposable sample_in_harmonyos checkout")
 
 def git(*a, check=False):
     return subprocess.run(["git", "-C", REPO, *a], capture_output=True, text=True, check=check)
@@ -69,8 +73,11 @@ try:
     git_dir, git_hidden = os.path.join(REPO, ".git"), os.path.join(REPO, ".git_hidden_eval")
     if os.path.isdir(git_dir):
         os.rename(git_dir, git_hidden)
-    BENCH = os.path.join(REPO, "harmony-swe-bench")
-    _stash = tempfile.mkdtemp(prefix=".hsb_answers_", dir=os.path.dirname(REPO))  # same FS, outside repo tree
+    BENCH = str(BENCH_ROOT)
+    # Keep rename operations on the benchmark's filesystem, including /mnt/c.
+    # This parent must be outside the material checkout; see docs/wsl-udocker.md.
+    _stash_parent = os.path.dirname(REPO) if os.path.commonpath([REPO, BENCH]) == REPO else os.path.dirname(BENCH)
+    _stash = tempfile.mkdtemp(prefix=".hsb_answers_", dir=_stash_parent)
     for sub in ("data", "_archive"):
         p = os.path.join(BENCH, sub)
         if os.path.isdir(p):

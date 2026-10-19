@@ -9,9 +9,10 @@ from harmony_bench.build import build_instance
 from harmony_bench.schema import write_instance
 from harmony_bench.cli import _head_commit
 from harmony_bench.llm.client import load_config, build_client
+from harmony_bench.paths import BENCH_ROOT, repo_root, toolchain_root
 
-REPO=os.path.abspath('..'); TC=os.path.abspath('../../harmony_toolchain'); OUT='data/instances'
-client=build_client(load_config('config/default.yaml'))
+REPO=repo_root(); TC=toolchain_root(REPO); OUT=str(BENCH_ROOT / 'data' / 'instances')
+client=build_client(load_config(str(BENCH_ROOT / 'config' / 'default.yaml')))
 idx=build_repo_index(REPO,['common','features','products']); sg=build_symbol_graph(idx)
 commit=_head_commit(REPO)
 

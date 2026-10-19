@@ -15,6 +15,7 @@ from harmony_bench.verify import gate
 from harmony_bench.build import build_instance
 from harmony_bench.schema import read_instance, write_instance
 from harmony_bench.llm.client import MockLLMClient, build_client, load_config
+from harmony_bench.paths import toolchain_root
 
 _SUBDIRS = ["common", "features", "products", "AppScope"]
 
@@ -29,7 +30,7 @@ def _head_commit(repo_root: str) -> str:
 
 
 def _default_toolchain(repo_root: str) -> str:
-    return os.path.abspath(os.path.join(repo_root, "..", "harmony_toolchain"))
+    return toolchain_root(repo_root)
 
 
 @click.group()
@@ -38,12 +39,12 @@ def cli() -> None:
 
 
 @cli.command()
-@click.option("--repo-root", required=True)
+@click.option("--repo-root", envvar="HB_REPO_ROOT", required=True)
 @click.option("--module", "module_dir", default="common",
               help="Module directory under the repo (e.g. common, features/mine)")
 @click.option("--num", default=3)
 @click.option("--out", default="data/instances")
-@click.option("--toolchain", default=None, help="harmony_toolchain dir (default: repo/../harmony_toolchain)")
+@click.option("--toolchain", envvar="HB_TOOLCHAIN_ROOT", default=None, help="harmony_toolchain dir (default: repo/../harmony_toolchain)")
 @click.option("--config", "config_path", default=None)
 @click.option("--mock", is_flag=True, default=False, help="Canned LLM + skip the oracle gate")
 @click.option("--no-verify", is_flag=True, default=False, help="Skip the compile-level gate")

@@ -3,9 +3,10 @@ from __future__ import annotations
 import os
 
 from harmony_bench.graph import build_repo_index, build_symbol_graph, forward_refs
+from harmony_bench.paths import repo_root
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.abspath(os.path.join(_HERE, "..", ".."))
+REPO = repo_root()
 SUBDIRS = ["common", "features", "products", "AppScope"]
 
 

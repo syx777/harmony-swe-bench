@@ -25,14 +25,32 @@ fi
 cd "$HB_REPO" || { echo "HB_ERR: repo not found"; exit 2; }
 
 # defeat incremental cache (stale cache -> false GREEN after a deletion)
-rm -rf "$MOD/build" "$MOD/.test" "$MOD/.hvigor" .hvigor/cache 2>/dev/null
+MODULE_DIR=""
+for candidate in "$MOD" "features/$MOD" "products/$MOD"; do
+  if [ -f "$candidate/oh-package.json5" ]; then MODULE_DIR="$candidate"; break; fi
+done
+if [ -z "$MODULE_DIR" ]; then echo "HB_ERR: module not found: $MOD"; exit 2; fi
+rm -rf "$MODULE_DIR/build" "$MODULE_DIR/.test" "$MODULE_DIR/.hvigor" .hvigor/cache 2>/dev/null
 
 LOG="$(mktemp /tmp/hb_hvigor.XXXXXX.log)"
 FIN="Finished :$MOD:default@UnitTestArkTS"
 FAIL="Failed :$MOD:default@UnitTestArkTS"
 
-hvigorw test -p module="$MOD" --no-daemon >"$LOG" 2>&1 &
+GROUP=0
+if command -v setsid >/dev/null; then
+  setsid hvigorw test -p module="$MOD" --no-daemon >"$LOG" 2>&1 &
+  GROUP=1
+else
+  hvigorw test -p module="$MOD" --no-daemon >"$LOG" 2>&1 &
+fi
 HPID=$!
+cleanup() {
+  if [ "$GROUP" = 1 ]; then kill -- "-$HPID" 2>/dev/null; else kill "$HPID" 2>/dev/null; fi
+  wait "$HPID" 2>/dev/null
+  rm -f "$LOG"
+}
+trap cleanup EXIT
+trap 'exit 2' INT TERM
 
 verdict=2
 elapsed=0
@@ -42,11 +60,6 @@ while kill -0 "$HPID" 2>/dev/null; do
   sleep 2; elapsed=$((elapsed+2))
   if [ "$elapsed" -ge "$HB_TIMEOUT" ]; then break; fi
 done
-
-# stop hvigor + any spawned node/previewer
-kill "$HPID" 2>/dev/null
-pkill -f "hvigor/hvigor/bin/hvigor.js" 2>/dev/null
-pkill -f "Previewer" 2>/dev/null
 
 # if the process already exited on its own, read the final markers
 if [ "$verdict" = 2 ]; then
@@ -58,5 +71,4 @@ echo "HB_VERDICT=$verdict"
 echo "HB_LOG_TAIL_BEGIN"
 grep -aE "Finished :$MOD:default@|Failed :$MOD:default@|ArkTS Compiler Error|Error Message:|BUILD (FAILED|SUCCESSFUL)" "$LOG" | tail -25
 echo "HB_LOG_TAIL_END"
-rm -f "$LOG"
 exit "$verdict"

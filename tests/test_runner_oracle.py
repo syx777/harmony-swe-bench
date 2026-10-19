@@ -14,10 +14,11 @@ import os
 import shutil
 
 from harmony_bench.runner import type_check, Verdict
+from harmony_bench.paths import repo_root, toolchain_root
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.abspath(os.path.join(_HERE, "..", ".."))            # sample_in_harmonyos
-TC = os.path.abspath(os.path.join(REPO, "..", "harmony_toolchain"))
+REPO = repo_root()
+TC = toolchain_root(REPO)
 DFU = os.path.join(REPO, "common/src/main/ets/util/DateFormatUtil.ets")
 TEST = os.path.join(REPO, "common/src/test/LocalUnit.test.ets")
 
